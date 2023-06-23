@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Audit Log Parser</title>
+  <style>
+    body {
+      font-family: monospace;
+      font-size: 12px;
+      height: 100%;
+      margin: 10px;
+      max-width: 100%;
+      padding: 10px;
+    }
+
+    h2 {
+      /* align center */
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    label {
+      font-weight: bold;
+    }
+
+    #fileInput,
+    #dataInput,
+    #shaLengthInput {
+      margin-bottom: 10px;
+    }
+
+    #loadButton {
+      margin-bottom: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-top: 10px;
+    }
+
+    table,
+    th,
+    td {
+      border: 1px solid black;
+      padding: 8px;
+      text-align: left;
+      white-space: pre-wrap; /* Update the white-space property */
+    }
+
+    td.scrollable {
+      overflow: auto;
+    }
+
+
+    th {
+      background-color: lightgray;
+      color: #444;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #f7f7f7;
+    }
+
+    tr:nth-child(even) {
+      background-color: #ffffff;
+    }
+
+    textarea {
+      font-family: 'Courier New', monospace;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      background-color: #f7f7f7;
+      color: #333;
+      width: 100%;
+      height: 300px;
+      resize: vertical;
+    }
+
+
+    #columnOptions {
+      margin-bottom: 20px;
+    }
+
+    .button {
+      font-family: 'Courier New', monospace;
+      display: inline-block;
+      text-align: center;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .button:hover {
+      background-color: #ddd;
+    }
+
+    .arrow {
+      font-weight: bold;
+      /* center the arrow */
+      display: inline-block;
+      vertical-align: middle;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Audit Log Parser</h1>
+  <div>
+
+    <div>
+      <input type="file" id="fileInput">
+    </div>
+    <div>
+      <textarea id="dataInput" rows="10" cols="50" placeholder="Paste JSON data here"></textarea>
+    </div>
+
+    <label>Columns:</label>
+    <div id="columnOptions">
+      <label><input type="checkbox" id="columnTime" checked>Time</label>
+      <label><input type="checkbox" id="columnActor" checked>Actor</label>
+      <label><input type="checkbox" id="columnAction" checked>Action</label>
+      <label><input type="checkbox" id="columnPullRequestTitle" checked>Pull Request Title</label>
+      <label><input type="checkbox" id="columnTitle" checked>Title</label>
+      <label><input type="checkbox" id="columnOldTitle" checked>Old Title</label>
+      <label><input type="checkbox" id="columnBody" checked>Body</label>
+      <label><input type="checkbox" id="columnOldBody" checked>Old Body</label>
+      <label><input type="checkbox" id="columnRepo" checked>Repo</label>
+      <label><input type="checkbox" id="columnPRURL" checked>PR URL</label>
+      <label><input type="checkbox" id="columnReferrer" checked>Referrer</label>
+      <label><input type="checkbox" id="columnPublicRepo" checked>Public Repo</label>
+      <label><input type="checkbox" id="columnFrom" checked>From</label>
+      <label><input type="checkbox" id="columnState" checked>State</label>
+    </div>
+  </div>
+
+  <div>
+    <label>Filters:</label>
+    <input type="text" id="filterActor" placeholder="Filter by Actor">
+    <input type="text" id="filterAction" placeholder="Filter by Action">
+  </div>
+
+  <table id="gitLogTable">
+    <tr id="columnHeaders">
+      <th>Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">Sort &#8595;</span></button></th>
+      <th>Actor</th>
+      <th>Action</th>
+      <th>Pull Request Title</th>
+      <th>Title</th>
+      <th>Old Title</th>
+      <th>Body</th>
+      <th>Old Body</th> 
+      <th>Repo</th>
+      <th>PR URL</th>
+      <th>Referrer</th>
+      <th>Public Repo</th>
+      <th>From</th>
+      <th>State</th>
+    </tr>
+  </table>
+
+  <script>
+    const textarea = document.getElementById('dataInput');
+
+    let data = [];
+    let sortByTime = 'asc';
+
+    function handlePasteData(event) {
+      event.preventDefault();
+
+      const clipboardData = event.clipboardData || window.clipboardData;
+      const pastedText = clipboardData.getData('text');
+
+      try {
+        const data = JSON.parse(pastedText);
+        const formattedJson = JSON.stringify(data, null, 2);
+
+        document.querySelector('#dataInput').value = formattedJson;
+
+        renderTable();
+
+      } catch (error) {
+        console.error('Invalid JSON:', error);
+      }
+    }
+
+    function handleFileUpload(event) {
+      const file = event.target.files[0];
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        document.querySelector('#dataInput').value = e.target.result;
+        data = JSON.parse(e.target.result);
+        data = JSON.stringify(data, null, 2);
+        document.querySelector('#dataInput').value = data;
+        renderTable();
+      };
+      reader.readAsText(file);
+    }
+
+      function toggleSortByTime() {
+        if (sortByTime === 'asc') {
+          sortByTime = 'desc';
+          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">Sort &#8593;</span>';
+        } else {
+          sortByTime = 'asc';
+          // render an arrow pointing up using ASCII code inner HTML
+          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">Sort &#8595;</span>';
+        }
+        renderTable();
+      }
+
+    function updateColumnHeaders() {
+      const columnHeadersRow = document.getElementById('columnHeaders');
+      const columnTime = document.getElementById('columnTime').checked;
+      const columnActor = document.getElementById('columnActor').checked;
+      const columnAction = document.getElementById('columnAction').checked;
+      const columnBody = document.getElementById('columnBody').checked;
+      const columnRepo = document.getElementById('columnRepo').checked;
+      const columnPRURL = document.getElementById('columnPRURL').checked;
+      const columnReferrer = document.getElementById('columnReferrer').checked;
+      const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
+      const columnFrom = document.getElementById('columnFrom').checked;
+      const columnTitle = document.getElementById('columnTitle').checked;
+      const columnState = document.getElementById('columnState').checked;
+      const columnPullRequestTitle = document.getElementById('columnPullRequestTitle').checked;
+      const columnOldBody = document.getElementById('columnOldBody').checked;
+      const columnOldTitle = document.getElementById('columnOldTitle').checked;
+
+      columnHeadersRow.innerHTML = '';
+
+      if (columnTime) {
+        const columnHeader = document.createElement('th');
+        columnHeader.innerHTML = 'Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">Sort &#8595;</span></button>'
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnActor) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Actor';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnAction) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Action';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnPullRequestTitle) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Pull Request Title';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnTitle) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Title';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+
+      if (columnOldTitle) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Old Title';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnBody) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Body';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnOldBody) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Old Body';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnRepo) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Repo';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnPRURL) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'PR URL';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnReferrer) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Referrer';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnPublicRepo) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Public Repo';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnFrom) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'From';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnState) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'State';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+
+
+      renderTable();
+    }
+
+
+    function renderTable() {
+      const table = document.getElementById('gitLogTable');
+      const columnHeadersRow = document.getElementById('columnHeaders');
+      const columnTime = document.getElementById('columnTime').checked;
+      const columnActor = document.getElementById('columnActor').checked;
+      const columnAction = document.getElementById('columnAction').checked;
+      const columnBody = document.getElementById('columnBody').checked;
+      const columnRepo = document.getElementById('columnRepo').checked;
+      const columnPRURL = document.getElementById('columnPRURL').checked;
+      const columnReferrer = document.getElementById('columnReferrer').checked;
+      const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
+      const columnFrom = document.getElementById('columnFrom').checked;
+      const columnTitle = document.getElementById('columnTitle').checked;
+      const columnState = document.getElementById('columnState').checked;
+      const columnPullRequestTitle = document.getElementById('columnPullRequestTitle').checked;
+      const columnOldBody = document.getElementById('columnOldBody').checked;
+      const columnOldTitle = document.getElementById('columnOldTitle').checked;
+      const filterActor = document.getElementById('filterActor').value.trim().toLowerCase();
+      const filterAction = document.getElementById('filterAction').value.trim().toLowerCase();
+
+      table.innerHTML = '';
+      table.appendChild(columnHeadersRow);
+
+      data = JSON.parse(textarea.value);
+
+      data.sort((a, b) => {
+        const timeA = new Date(a['@timestamp']);
+        const timeB = new Date(b['@timestamp']);
+
+        if (sortByTime === 'asc') {
+          return timeA - timeB;
+        } else {
+          return timeB - timeA;
+        }
+        return 0;
+      });
+      data.forEach((entry) => {
+        const actor = entry.actor.toLowerCase();
+        const action = entry.action.toLowerCase();
+
+        if ((actor.includes(filterActor) || filterActor === '') && (action.includes(filterAction) || filterAction === '')) {
+          const row = document.createElement('tr');
+
+          if (columnTime) {
+            const cell = document.createElement('td');
+            cell.textContent = entry['@timestamp'];
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnActor) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.actor;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnAction) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.action;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+
+          if (columnPullRequestTitle) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.pull_request_title;
+            cell.classList.add('scrollable');
+            row.appendChild(cell);
+          }
+
+
+          if (columnTitle) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.title;
+            cell.classList.add('scrollable');
+            row.appendChild(cell);
+          }
+
+
+          if (columnOldTitle) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.old_title;
+            cell.classList.add('scrollable');
+            row.appendChild(cell);
+          }
+
+          if (columnBody) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.body;
+            row.appendChild(cell);
+          }
+
+
+          if (columnOldBody) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.old_body;
+            cell.classList.add('scrollable');
+            row.appendChild(cell);
+          }
+
+
+          if (columnRepo) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.repo;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnPRURL) {
+            const cell = document.createElement('td');
+            const link = document.createElement('a');
+            link.href = entry.pull_request_url;
+            link.textContent = entry.pull_request_url;
+            cell.appendChild(link);
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnReferrer) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.referrer;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnPublicRepo) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.public_repo;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnFrom) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.from;
+            row.appendChild(cell);
+          }
+
+
+          if (columnState) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.state;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          table.appendChild(row);
+        }
+      });
+    }
+
+    const filterInputs = document.querySelectorAll('input[type="text"]');
+    filterInputs.forEach((input) => {
+      input.addEventListener('input', renderTable);
+    });
+
+    // Add event listener to the textarea for the input event
+    textarea.addEventListener("input", function () {
+      // Load the data from the textarea
+      data = JSON.parse(textarea.value);
+      renderTable();
+    });
+
+    // Add event listener to the file input for the change event
+    document.querySelector('#fileInput').addEventListener('change', handleFileUpload);
+
+    // Listen for the "paste" event on the textarea
+    document.querySelector('#dataInput').addEventListener('paste', handlePasteData);
+
+    document.querySelectorAll('#columnOptions input').forEach(input => {
+      input.addEventListener('change', updateColumnHeaders);
+    });
+
+  </script>
+</body>
+
+</html>
