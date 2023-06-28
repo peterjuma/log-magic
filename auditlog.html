@@ -159,7 +159,7 @@
 
   <table id="gitLogTable">
     <tr id="columnHeaders">
-      <th>Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">Sort &#8595;</span></button></th>
+      <th>Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">&#8595;</span></button></th>
       <th>Actor</th>
       <th>Action</th>
       <th>Pull Request Title</th>
@@ -221,11 +221,11 @@
       function toggleSortByTime() {
         if (sortByTime === 'asc') {
           sortByTime = 'desc';
-          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">Sort &#8593;</span>';
+          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">&#8593;</span>';
         } else {
           sortByTime = 'asc';
           // render an arrow pointing up using ASCII code inner HTML
-          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">Sort &#8595;</span>';
+          document.querySelector('#sortByTime').innerHTML = '<span class="arrow">&#8595;</span>';
         }
         renderTable();
       }
@@ -287,7 +287,7 @@
 
       if (columnTime) {
         const columnHeader = document.createElement('th');
-        columnHeader.innerHTML = 'Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">Sort &#8595;</span></button>'
+        columnHeader.innerHTML = 'Time <button id="sortByTime" onclick="toggleSortByTime()"><span class="arrow">&#8595;</span></button>'
         columnHeadersRow.appendChild(columnHeader);
       }
 
