@@ -126,18 +126,35 @@
       <label><input type="checkbox" id="columnBody" checked>Body</label>
       <label><input type="checkbox" id="columnOldBody" checked>Old Body</label>
       <label><input type="checkbox" id="columnRepo" checked>Repo</label>
+      <label><input type="checkbox" id="columnRepoId" checked>Repo ID </label>
       <label><input type="checkbox" id="columnPRURL" checked>PR URL</label>
       <label><input type="checkbox" id="columnReferrer" checked>Referrer</label>
       <label><input type="checkbox" id="columnPublicRepo" checked>Public Repo</label>
       <label><input type="checkbox" id="columnFrom" checked>From</label>
       <label><input type="checkbox" id="columnState" checked>State</label>
+      <label><input type="checkbox" id="columnForkParent" checked>Fork Parent</label>
+      <label><input type="checkbox" id="columnForkParentId" checked>Fork Parent ID</label>
+      <label><input type="checkbox" id="columnVisibility" checked>Visibility</label>
     </div>
   </div>
+
+    <div>
+      <input type="checkbox" id="excludePrCols" unchecked>
+      <label for="excludePrCols">Exclude PR colums</label>
+    </div>
+    <div>
+      <input type="checkbox" id="excludeForkCols" unchecked>
+      <label for="excludeForkCols">Exclude Fork colums</label>
+    </div>
+    <br>
 
   <div>
     <label>Filters:</label>
     <input type="text" id="filterActor" placeholder="Filter by Actor">
     <input type="text" id="filterAction" placeholder="Filter by Action">
+    <button class="button" type="button" onclick="downloadCSV()">Download CSV</button>
+    <button class="button" type="button" onclick="downloadJSON()">Download JSON</button>
+    <button class="button" type="button" onclick="downloadMarkdown()">Download Markdown</button>
   </div>
 
   <table id="gitLogTable">
@@ -151,11 +168,15 @@
       <th>Body</th>
       <th>Old Body</th> 
       <th>Repo</th>
+      <th>Repo ID</th>
       <th>PR URL</th>
       <th>Referrer</th>
       <th>Public Repo</th>
       <th>From</th>
       <th>State</th>
+      <th>Fork Parent</th>
+      <th>Fork Parent ID</th>
+      <th>Visibility</th>
     </tr>
   </table>
 
@@ -209,6 +230,37 @@
         renderTable();
       }
 
+   function excludeCols() {
+      const excludePrCols = document.getElementById('excludePrCols').checked;
+      const excludeForkCols = document.getElementById('excludeForkCols').checked;
+
+      // Toggle columns based on excludePrCols checkbox
+      document.getElementById('columnPullRequestTitle').checked = !excludePrCols;
+      document.getElementById('columnTitle').checked = !excludePrCols;
+      document.getElementById('columnOldTitle').checked = !excludePrCols;
+      document.getElementById('columnBody').checked = !excludePrCols;
+      document.getElementById('columnOldBody').checked = !excludePrCols;
+      document.getElementById('columnPRURL').checked = !excludePrCols;
+      document.getElementById('columnReferrer').checked = !excludePrCols;
+      document.getElementById('columnPublicRepo').checked = !excludePrCols;
+      document.getElementById('columnFrom').checked = !excludePrCols;
+      document.getElementById('columnState').checked = !excludePrCols;
+
+      // Toggle columns based on excludeForkCols checkbox
+      document.getElementById('columnForkParent').checked = !excludeForkCols;
+      document.getElementById('columnForkParentId').checked = !excludeForkCols;
+      document.getElementById('columnVisibility').checked = !excludeForkCols;
+
+      // Set the rest of the columns to checked
+      document.getElementById('columnRepo').checked = true;
+      document.getElementById('columnRepoId').checked = true;
+      document.getElementById('columnActor').checked = true;
+      document.getElementById('columnAction').checked = true;
+      document.getElementById('columnTime').checked = true;
+
+      updateColumnHeaders()
+    }
+
     function updateColumnHeaders() {
       const columnHeadersRow = document.getElementById('columnHeaders');
       const columnTime = document.getElementById('columnTime').checked;
@@ -216,6 +268,7 @@
       const columnAction = document.getElementById('columnAction').checked;
       const columnBody = document.getElementById('columnBody').checked;
       const columnRepo = document.getElementById('columnRepo').checked;
+      const columnRepoId = document.getElementById('columnRepoId').checked;
       const columnPRURL = document.getElementById('columnPRURL').checked;
       const columnReferrer = document.getElementById('columnReferrer').checked;
       const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
@@ -225,6 +278,10 @@
       const columnPullRequestTitle = document.getElementById('columnPullRequestTitle').checked;
       const columnOldBody = document.getElementById('columnOldBody').checked;
       const columnOldTitle = document.getElementById('columnOldTitle').checked;
+      const columnForkParent = document.getElementById('columnForkParent').checked;
+      const columnForkParentId = document.getElementById('columnForkParentId').checked;
+      const columnVisibility = document.getElementById('columnVisibility').checked;
+
 
       columnHeadersRow.innerHTML = '';
 
@@ -283,6 +340,12 @@
         columnHeadersRow.appendChild(columnHeader);
       }
 
+      if (columnRepoId) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Repo ID';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
       if (columnPRURL) {
         const columnHeader = document.createElement('th');
         columnHeader.textContent = 'PR URL';
@@ -313,7 +376,23 @@
         columnHeadersRow.appendChild(columnHeader);
       }
 
+      if (columnForkParent) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Fork Parent';
+        columnHeadersRow.appendChild(columnHeader);
+      }
 
+      if (columnForkParentId) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Fork Parent ID';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+
+      if (columnVisibility) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Visibility';
+        columnHeadersRow.appendChild(columnHeader);
+      }
 
       renderTable();
     }
@@ -327,6 +406,7 @@
       const columnAction = document.getElementById('columnAction').checked;
       const columnBody = document.getElementById('columnBody').checked;
       const columnRepo = document.getElementById('columnRepo').checked;
+      const columnRepoId = document.getElementById('columnRepoId').checked;
       const columnPRURL = document.getElementById('columnPRURL').checked;
       const columnReferrer = document.getElementById('columnReferrer').checked;
       const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
@@ -338,6 +418,10 @@
       const columnOldTitle = document.getElementById('columnOldTitle').checked;
       const filterActor = document.getElementById('filterActor').value.trim().toLowerCase();
       const filterAction = document.getElementById('filterAction').value.trim().toLowerCase();
+      const columnForkParent = document.getElementById('columnForkParent').checked;
+      const columnForkParentId = document.getElementById('columnForkParentId').checked;
+      const columnVisibility = document.getElementById('columnVisibility').checked;
+
 
       table.innerHTML = '';
       table.appendChild(columnHeadersRow);
@@ -429,6 +513,13 @@
             row.appendChild(cell);
           }
 
+          if (columnRepoId) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.repo_id;
+            cell.classList.add('scrollable');
+            row.appendChild(cell);
+          }
+
           if (columnPRURL) {
             const cell = document.createElement('td');
             const link = document.createElement('a');
@@ -467,11 +558,196 @@
             row.appendChild(cell);
           }
 
+          if (columnForkParent) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.fork_parent;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnForkParentId) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.fork_parent_id;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnVisibility) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.visibility;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+          
           table.appendChild(row);
         }
       });
     }
 
+    function downloadCSV() {
+      // Create an empty array to store the rows
+      const rows = [];
+
+      const table = document.getElementById('gitLogTable');
+
+      // Iterate over each row in the table
+      for (let i = 0; i < table.rows.length; i++) {
+        const row = table.rows[i];
+        const rowData = [];
+
+        // Iterate over each cell in the row
+        for (let j = 0; j < row.cells.length; j++) {
+          const cell = row.cells[j];
+          rowData.push(cell.innerText);
+        }
+
+        // Push the row data to the rows array
+        rows.push(rowData);
+      }
+
+      // Convert the rows array to CSV format
+      let csvContent = '';
+      rows.forEach(row => {
+        const rowString = row.join(',');
+        csvContent += rowString + '\n';
+      });
+      const encodedCSVContent = encodeURIComponent(csvContent);
+
+      const fileName = generateRandomFileName();
+
+      const downloadLink = document.createElement("a");
+      downloadLink.href = "data:text/csv;charset=utf-8," + encodedCSVContent;
+      downloadLink.download = fileName + ".csv";
+      downloadLink.style.display = "none";
+
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+    }
+
+    // Dowload csv
+
+    function downloadJSON() {
+      // Get the JSON data from the textarea
+      const jsonData = convertTableToJSON()
+
+      // Generate a dynamic file name using the current datetime
+      const fileName = generateRandomFileName();
+
+      // Create a Blob object from the JSON data
+      const blob = new Blob([jsonData], { type: "application/json" });
+
+      // Create a temporary link element
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName + ".json";
+
+      // Programmatically click the link to initiate the download
+      link.click();
+
+      // Clean up the temporary link
+      URL.revokeObjectURL(link.href);
+    }
+
+    function convertTableToJSON() {
+      // Get the table element
+      const table = document.getElementById('gitLogTable');
+
+      // Get the table headers
+      const headers = Array.from(table.querySelectorAll("th")).map((th) => th.textContent.trim());
+
+      // Get the table rows
+      const rows = Array.from(table.querySelectorAll("tbody tr"));
+
+      // Create an array to store the JSON objects
+      const jsonData = [];
+
+      // Iterate over the table rows
+      for (const row of rows) {
+        const jsonRow = {};
+
+        // Iterate over the table cells
+        const cells = row.querySelectorAll("td");
+        for (let i = 0; i < cells.length; i++) {
+          const header = headers[i];
+          const value = cells[i].textContent.trim();
+          jsonRow[header] = value;
+        }
+
+        jsonData.push(jsonRow);
+      }
+
+      // Return the JSON data as a string
+      return JSON.stringify(jsonData, null, 2);
+    }
+
+
+    function convertHtmlTableToMarkdown(table) {
+      const markdownRows = [];
+      const rows = table.getElementsByTagName('tr');
+
+      // Extract header row if available
+      const headerRow = rows[0];
+      const headerCells = headerRow.getElementsByTagName('th');
+      if (headerCells.length > 0) {
+        const headerValues = [];
+        for (let j = 0; j < headerCells.length; j++) {
+          const cellValue = headerCells[j].innerText;
+          headerValues.push(cellValue);
+        }
+        markdownRows.push(headerValues.join(' | '));
+      }
+
+      // Extract data rows
+      for (let i = 1; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName('td');
+        const rowValues = [];
+        for (let j = 0; j < cells.length; j++) {
+          const cellValue = cells[j].innerText;
+          rowValues.push(cellValue);
+        }
+        markdownRows.push(rowValues.join(' | '));
+      }
+
+      const markdownTable = markdownRows.join('\n');
+
+      // Output the Markdown table
+      return markdownTable;
+    }
+
+    function downloadMarkdown() {
+      const table = document.getElementById('gitLogTable');
+      const markdownData = convertHtmlTableToMarkdown(table);
+      // Generate a dynamic file name using the current datetime
+      const fileName = generateRandomFileName();
+
+      // Create a Blob object from the JSON data
+      const blob = new Blob([markdownData], { type: "application/json" });
+
+      // Create a temporary link element
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = fileName + ".md";
+
+      // Programmatically click the link to initiate the download
+      link.click();
+
+      // Clean up the temporary link
+      URL.revokeObjectURL(link.href);
+
+    }
+
+      function generateRandomFileName() {
+        const currentDate = new Date();
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, "0");
+        const day = String(currentDate.getDate()).padStart(2, "0");
+        const milliseconds = String(currentDate.getMilliseconds()).padStart(3, "0");
+
+        return `pushlog_${year}${month}${day}${milliseconds}`;
+      }
+
+    // Add event listener to the filter inputs for the input event
     const filterInputs = document.querySelectorAll('input[type="text"]');
     filterInputs.forEach((input) => {
       input.addEventListener('input', renderTable);
@@ -493,6 +769,18 @@
     document.querySelectorAll('#columnOptions input').forEach(input => {
       input.addEventListener('change', updateColumnHeaders);
     });
+
+    // Add event listener to the download buttons
+    document.querySelectorAll('.downloadButton').forEach(button => {
+      button.addEventListener('click', handleDownload);
+    });
+
+    // Add event listener to the excludePrCols and excludeForkCols checkboxes
+
+    document.querySelectorAll('#excludePrCols, #excludeForkCols').forEach(checkbox => {
+      checkbox.addEventListener('change', excludeCols);
+    });
+
 
   </script>
 </body>
