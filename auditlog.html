@@ -129,6 +129,9 @@
       <label><input type="checkbox" id="columnRepoId" checked>Repo ID </label>
       <label><input type="checkbox" id="columnPRURL" checked>PR URL</label>
       <label><input type="checkbox" id="columnReferrer" checked>Referrer</label>
+      <label><input type="checkbox" id="columnReviewer" checked>Reviewer</label>
+      <label><input type="checkbox" id="columnJob" checked>Job</label>
+      <label><input type="checkbox" id="columnRequestId" checked>Request ID</label>
       <label><input type="checkbox" id="columnPublicRepo" checked>Public Repo</label>
       <label><input type="checkbox" id="columnFrom" checked>From</label>
       <label><input type="checkbox" id="columnState" checked>State</label>
@@ -171,6 +174,9 @@
       <th>Repo ID</th>
       <th>PR URL</th>
       <th>Referrer</th>
+      <th>Reviewer</th>
+      <th>Job</th>
+      <th>Request ID</th>
       <th>Public Repo</th>
       <th>From</th>
       <th>State</th>
@@ -242,9 +248,9 @@
       document.getElementById('columnOldBody').checked = !excludePrCols;
       document.getElementById('columnPRURL').checked = !excludePrCols;
       document.getElementById('columnReferrer').checked = !excludePrCols;
-      document.getElementById('columnPublicRepo').checked = !excludePrCols;
       document.getElementById('columnFrom').checked = !excludePrCols;
       document.getElementById('columnState').checked = !excludePrCols;
+
 
       // Toggle columns based on excludeForkCols checkbox
       document.getElementById('columnForkParent').checked = !excludeForkCols;
@@ -271,6 +277,9 @@
       const columnRepoId = document.getElementById('columnRepoId').checked;
       const columnPRURL = document.getElementById('columnPRURL').checked;
       const columnReferrer = document.getElementById('columnReferrer').checked;
+      const columnReviewer = document.getElementById('columnReviewer').checked;
+      const columnJob = document.getElementById('columnJob').checked;
+      const columnRequestId = document.getElementById('columnRequestId').checked;
       const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
       const columnFrom = document.getElementById('columnFrom').checked;
       const columnTitle = document.getElementById('columnTitle').checked;
@@ -357,6 +366,21 @@
         columnHeader.textContent = 'Referrer';
         columnHeadersRow.appendChild(columnHeader);
       }
+      if (columnReviewer) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Reviewer';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+      if (columnJob) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Job';
+        columnHeadersRow.appendChild(columnHeader);
+      }
+      if (columnRequestId) {
+        const columnHeader = document.createElement('th');
+        columnHeader.textContent = 'Request ID';
+        columnHeadersRow.appendChild(columnHeader);
+      }
 
       if (columnPublicRepo) {
         const columnHeader = document.createElement('th');
@@ -409,6 +433,9 @@
       const columnRepoId = document.getElementById('columnRepoId').checked;
       const columnPRURL = document.getElementById('columnPRURL').checked;
       const columnReferrer = document.getElementById('columnReferrer').checked;
+      const columnReviewer = document.getElementById('columnReviewer').checked;
+      const columnJob = document.getElementById('columnJob').checked;
+      const columnRequestId = document.getElementById('columnRequestId').checked;
       const columnPublicRepo = document.getElementById('columnPublicRepo').checked;
       const columnFrom = document.getElementById('columnFrom').checked;
       const columnTitle = document.getElementById('columnTitle').checked;
@@ -533,6 +560,27 @@
           if (columnReferrer) {
             const cell = document.createElement('td');
             cell.textContent = entry.referrer;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnReviewer) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.reviewer;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnJob) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.job;
+            cell.classList.add('scrollable'); 
+            row.appendChild(cell);
+          }
+
+          if (columnRequestId) {
+            const cell = document.createElement('td');
+            cell.textContent = entry.request_id;
             cell.classList.add('scrollable'); 
             row.appendChild(cell);
           }
