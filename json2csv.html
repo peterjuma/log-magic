@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON to CSV Converter</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 10px;
+            font-family: monospace;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fff;
+            resize: vertical;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #28a745;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .output {
+            margin-top: 20px;
+        }
+        .format-options {
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+<body>
+    <h1>JSON to CSV Converter</h1>
+    <textarea id="jsonInput" placeholder="Paste your JSON array here..."></textarea>
+    
+    <div class="format-options">
+        <label>
+            <input type="radio" name="format" value="csv" checked onchange="updateOutput()"> Raw CSV
+        </label>
+        <label>
+            <input type="radio" name="format" value="table" onchange="updateOutput()"> Tabulated
+        </label>
+        <label>
+            <input type="radio" name="format" value="markdown" onchange="updateOutput()"> Markdown
+        </label>
+        <label>
+            <input type="radio" name="format" value="sql" onchange="updateOutput()"> SQL
+        </label>
+    </div>
+    
+    <button onclick="convertJsonToCsv()">Convert to CSV</button>
+    <div class="output">
+        <h2>CSV Output</h2>
+        <textarea id="csvOutput" readonly></textarea>
+        <div id="tableOutput"></div>
+    </div>
+
+    <script>
+        let jsonData = [];
+        let keys = [];
+
+        function convertJsonToCsv() {
+            const input = document.getElementById('jsonInput').value;
+            try {
+                // Parse the input JSON array
+                jsonData = JSON.parse(input);
+                if (!Array.isArray(jsonData) || jsonData.length === 0) {
+                    throw new Error("Invalid JSON array");
+                }
+
+                // Get the headers (keys) from the first object
+                keys = Object.keys(jsonData[0]);
+
+                // Update the output based on the selected format
+                updateOutput();
+            } catch (error) {
+                alert('Invalid JSON format. Please ensure your input is a properly formatted JSON array.');
+            }
+        }
+
+        function updateOutput() {
+            const format = document.querySelector('input[name="format"]:checked').value;
+            const csvOutput = document.getElementById('csvOutput');
+            const tableOutput = document.getElementById('tableOutput');
+
+            switch (format) {
+                case 'csv':
+                    displayCsv();
+                    break;
+                case 'table':
+                    displayTable();
+                    break;
+                case 'markdown':
+                    displayMarkdown();
+                    break;
+                case 'sql':
+                    displaySql();
+                    break;
+                default:
+                    csvOutput.value = '';
+                    tableOutput.innerHTML = '';
+            }
+        }
+
+        function displayCsv() {
+            const csv = [keys.join(',')];
+            jsonData.forEach(obj => {
+                csv.push(keys.map(key => JSON.stringify(obj[key] || '')).join(','));
+            });
+            document.getElementById('csvOutput').value = csv.join('\n');
+            document.getElementById('csvOutput').style.display = 'block';
+            document.getElementById('tableOutput').innerHTML = '';
+        }
+
+        function displayTable() {
+            const tableOutput = document.getElementById('tableOutput');
+            document.getElementById('csvOutput').style.display = 'none';
+            renderTable(jsonData, keys);
+        }
+
+        function displayMarkdown() {
+            const colWidths = calculateColumnWidths();
+            const headerRow = `| ${keys.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
+            const separatorRow = `| ${colWidths.map(width => '-'.repeat(width)).join(' | ')} |`;
+            const rows = jsonData.map(obj => `| ${keys.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const markdownTable = [headerRow, separatorRow, ...rows].join('\n');
+            document.getElementById('csvOutput').value = markdownTable;
+            document.getElementById('csvOutput').style.display = 'block';
+            document.getElementById('tableOutput').innerHTML = '';
+        }
+
+        function displaySql() {
+            const colWidths = calculateColumnWidths();
+            const headerRow = `+${colWidths.map(width => '-'.repeat(width + 2)).join('+')}+`;
+            const columnRow = `| ${keys.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
+            const rows = jsonData.map(obj => `| ${keys.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const sqlTable = [headerRow, columnRow, headerRow, ...rows, headerRow].join('\n');
+            document.getElementById('csvOutput').value = sqlTable;
+            document.getElementById('csvOutput').style.display = 'block';
+            document.getElementById('tableOutput').innerHTML = '';
+        }
+
+        function calculateColumnWidths() {
+            // Calculate the maximum width for each column based on header and data
+            return keys.map((key, index) => {
+                return Math.max(
+                    key.length,
+                    ...jsonData.map(row => String(row[key] || '').length)
+                );
+            });
+        }
+
+        function renderTable(data, headers) {
+            const table = document.createElement('table');
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+
+            // Create table headers
+            const headerRow = document.createElement('tr');
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+
+            // Create table rows
+            data.forEach(row => {
+                const tr = document.createElement('tr');
+                headers.forEach(header => {
+                    const td = document.createElement('td');
+                    td.textContent = row[header] !== undefined ? row[header] : '';
+                    tr.appendChild(td);
+                });
+                tbody.appendChild(tr);
+            });
+
+            table.appendChild(thead);
+            table.appendChild(tbody);
+            document.getElementById('tableOutput').innerHTML = ''; // Clear previous table
+            document.getElementById('tableOutput').appendChild(table);
+        }
+    </script>
+</body>
+</html>
