@@ -74,6 +74,16 @@
             cursor: pointer;
         }
 
+        .field-selector {
+            margin-bottom: 20px;
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #f8f9fa;
+        }
+
         .table-container {
             overflow-x: auto;
             max-width: 100%;
@@ -150,12 +160,24 @@
                 <input type="radio" name="format" value="sql" onchange="updateOutput()"> SQL
             </label>
         </div>
-        
+
+        <div style="margin-bottom: 20px;">
+            <label>
+                <input type="checkbox" id="flattenCheckbox"> Flatten JSON
+            </label>
+        </div>
+
+        <!-- Dynamic Field Selector -->
+        <div class="field-selector" id="fieldSelector">
+            <strong>Select Fields to Display:</strong>
+            <!-- Checkboxes will be generated here -->
+        </div>
+
         <button onclick="convertJsonToCsv()">Convert to CSV</button>
         <div class="output">
             <h2>Output</h2>
             <textarea id="csvOutput" readonly></textarea>
-            <div class="table-container">
+            <div class="table-container" id="tableContainer">
                 <div id="tableOutput"></div>
             </div>
             <div class="pagination" id="paginationControls"></div>
@@ -172,100 +194,163 @@
 
         function handleFileUpload(event) {
             const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('jsonInput').value = e.target.result;
-                    convertJsonToCsv();
-                };
-                reader.readAsText(file);
+            if (!file) {
+                alert('No file selected.');
+                return;
             }
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('jsonInput').value = e.target.result;
+                convertJsonToCsv();
+            };
+            reader.onerror = function() {
+                alert('Error reading the file. Please try again.');
+            };
+            reader.readAsText(file);
         }
 
         function convertJsonToCsv() {
             const input = document.getElementById('jsonInput').value;
+            const flatten = document.getElementById('flattenCheckbox').checked;
+
+            if (!input.trim()) {
+                alert('JSON input cannot be empty.');
+                return;
+            }
+
             try {
-                // Parse the input JSON array
                 jsonData = JSON.parse(input);
+
                 if (!Array.isArray(jsonData) || jsonData.length === 0) {
                     throw new Error("Invalid JSON array");
                 }
 
-                // Get the headers (keys) from the first object
-                keys = Object.keys(jsonData[0]);
+                if (flatten) {
+                    jsonData = jsonData.map(item => flattenObject(item));
+                }
 
-                // Update the output based on the selected format
+                keys = Object.keys(jsonData[0]);
+                createFieldSelectors(keys);
                 updateOutput();
             } catch (error) {
                 alert('Invalid JSON format. Please ensure your input is a properly formatted JSON array.');
             }
         }
 
+        // Function to flatten a nested JSON object
+        function flattenObject(obj, parent = '', result = {}) {
+            for (let key in obj) {
+                let newKey = parent ? `${parent}.${key}` : key;
+
+                if (typeof obj[key] === 'object' && !Array.isArray(obj[key]) && obj[key] !== null) {
+                    flattenObject(obj[key], newKey, result);
+                } else if (Array.isArray(obj[key])) {
+                    obj[key].forEach((item, index) => {
+                        flattenObject(item, `${newKey}[${index}]`, result);
+                    });
+                } else {
+                    result[newKey] = obj[key];
+                }
+            }
+            return result;
+        }
+
+        // Function to create checkboxes for field selection
+        function createFieldSelectors(fields) {
+            const fieldSelector = document.getElementById('fieldSelector');
+            fieldSelector.innerHTML = '<strong>Select Fields to Display:</strong>';
+            fields.forEach(field => {
+                const checkbox = document.createElement('input');
+                checkbox.type = 'checkbox';
+                checkbox.id = `field-${field}`;
+                checkbox.value = field;
+                checkbox.checked = true; // Default to checked
+                checkbox.addEventListener('change', updateOutput); // Update output on change
+
+                const label = document.createElement('label');
+                label.htmlFor = `field-${field}`;
+                label.textContent = field;
+
+                const container = document.createElement('div');
+                container.appendChild(checkbox);
+                container.appendChild(label);
+
+                fieldSelector.appendChild(container);
+            });
+        }
+
+        // Function to get selected fields from checkboxes
+        function getSelectedFields() {
+            const checkboxes = document.querySelectorAll('#fieldSelector input[type="checkbox"]');
+            return Array.from(checkboxes)
+                .filter(checkbox => checkbox.checked)
+                .map(checkbox => checkbox.value);
+        }
+
         function updateOutput() {
             const format = document.querySelector('input[name="format"]:checked').value;
+            const selectedFields = getSelectedFields();
             const csvOutput = document.getElementById('csvOutput');
             const tableOutput = document.getElementById('tableOutput');
+            const tableContainer = document.getElementById('tableContainer');
 
-            switch (format) {
-                case 'csv':
-                    displayCsv();
-                    break;
-                case 'table':
-                    displayTable();
-                    break;
-                case 'markdown':
-                    displayMarkdown();
-                    break;
-                case 'sql':
-                    displaySql();
-                    break;
-                default:
-                    csvOutput.value = '';
-                    tableOutput.innerHTML = '';
+            // Show or hide the raw output section based on the selected format
+            if (format === 'table') {
+                tableContainer.style.display = 'block';
+                csvOutput.style.display = 'none'; // Hide raw output textarea when Tabulated is selected
+                displayTable(selectedFields);
+            } else {
+                tableContainer.style.display = 'none';
+                csvOutput.style.display = 'block'; // Show raw output for other formats
+                switch (format) {
+                    case 'csv':
+                        displayCsv(selectedFields);
+                        break;
+                    case 'markdown':
+                        displayMarkdown(selectedFields);
+                        break;
+                    case 'sql':
+                        displaySql(selectedFields);
+                        break;
+                    default:
+                        csvOutput.value = '';
+                        tableOutput.innerHTML = '';
+                }
             }
         }
 
-        function displayCsv() {
-            const csv = [keys.join(',')];
+        function displayCsv(selectedFields) {
+            const csv = [selectedFields.join(',')];
             jsonData.forEach(obj => {
-                csv.push(keys.map(key => JSON.stringify(obj[key] || '')).join(','));
+                csv.push(selectedFields.map(key => JSON.stringify(obj[key] || '')).join(','));
             });
             document.getElementById('csvOutput').value = csv.join('\n');
-            document.getElementById('csvOutput').style.display = 'block';
-            document.getElementById('tableOutput').innerHTML = '';
         }
 
-        function displayTable() {
-            const tableOutput = document.getElementById('tableOutput');
-            document.getElementById('csvOutput').style.display = 'none';
-            renderTable(jsonData, keys, currentPage);
+        function displayTable(selectedFields) {
+            renderTable(jsonData, selectedFields, currentPage);
         }
 
-        function displayMarkdown() {
-            const colWidths = calculateColumnWidths();
-            const headerRow = `| ${keys.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
+        function displayMarkdown(selectedFields) {
+            const colWidths = calculateColumnWidths(selectedFields);
+            const headerRow = `| ${selectedFields.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
             const separatorRow = `| ${colWidths.map(width => '-'.repeat(width)).join(' | ')} |`;
-            const rows = jsonData.map(obj => `| ${keys.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const rows = jsonData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
             const markdownTable = [headerRow, separatorRow, ...rows].join('\n');
             document.getElementById('csvOutput').value = markdownTable;
-            document.getElementById('csvOutput').style.display = 'block';
-            document.getElementById('tableOutput').innerHTML = '';
         }
 
-        function displaySql() {
-            const colWidths = calculateColumnWidths();
+        function displaySql(selectedFields) {
+            const colWidths = calculateColumnWidths(selectedFields);
             const headerRow = `+${colWidths.map(width => '-'.repeat(width + 2)).join('+')}+`;
-            const columnRow = `| ${keys.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
-            const rows = jsonData.map(obj => `| ${keys.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const columnRow = `| ${selectedFields.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
+            const rows = jsonData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
             const sqlTable = [headerRow, columnRow, headerRow, ...rows, headerRow].join('\n');
             document.getElementById('csvOutput').value = sqlTable;
-            document.getElementById('csvOutput').style.display = 'block';
-            document.getElementById('tableOutput').innerHTML = '';
         }
 
-        function calculateColumnWidths() {
-            // Calculate the maximum width for each column based on header and data
-            return keys.map((key, index) => {
+        function calculateColumnWidths(selectedFields) {
+            return selectedFields.map((key, index) => {
                 return Math.max(
                     key.length,
                     ...jsonData.map(row => String(row[key] || '').length)
@@ -282,7 +367,6 @@
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
-            // Create table headers
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
@@ -291,7 +375,6 @@
             });
             thead.appendChild(headerRow);
 
-            // Create table rows for the current page
             paginatedData.forEach(row => {
                 const tr = document.createElement('tr');
                 headers.forEach(header => {
@@ -304,10 +387,9 @@
 
             table.appendChild(thead);
             table.appendChild(tbody);
-            document.getElementById('tableOutput').innerHTML = ''; // Clear previous table
+            document.getElementById('tableOutput').innerHTML = '';
             document.getElementById('tableOutput').appendChild(table);
 
-            // Update pagination controls
             updatePaginationControls(page, data.length);
         }
 
@@ -316,23 +398,21 @@
             const totalPages = Math.ceil(totalItems / itemsPerPage);
             paginationControls.innerHTML = '';
 
-            // Previous button
             const prevButton = document.createElement('button');
             prevButton.textContent = 'Previous';
             prevButton.disabled = page === 1;
             prevButton.onclick = () => {
                 currentPage--;
-                renderTable(jsonData, keys, currentPage);
+                renderTable(jsonData, getSelectedFields(), currentPage);
             };
             paginationControls.appendChild(prevButton);
 
-            // Next button
             const nextButton = document.createElement('button');
             nextButton.textContent = 'Next';
             nextButton.disabled = page === totalPages;
             nextButton.onclick = () => {
                 currentPage++;
-                renderTable(jsonData, keys, currentPage);
+                renderTable(jsonData, getSelectedFields(), currentPage);
             };
             paginationControls.appendChild(nextButton);
         }
