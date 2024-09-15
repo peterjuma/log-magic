@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JSON Formatter</title>
+    <title>JSON Parser</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -65,28 +65,77 @@
         }
 
         .format-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
             margin-bottom: 20px;
-            justify-content: space-around;
         }
 
-        label {
-            font-weight: 500;
+        .format-options label {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f8f9fa;
             cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .format-options input[type="radio"] {
+            margin: 0;
+        }
+
+        .format-options label:hover {
+            background-color: #e0e7ff;
         }
 
         .field-selector {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
             margin-bottom: 20px;
-            max-height: 150px;
-            overflow-y: auto;
+            padding: 15px;
             border: 1px solid #ddd;
-            padding: 10px;
             border-radius: 5px;
             background-color: #f8f9fa;
+        }
+
+        .field-selector strong {
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .fields-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+
+        .field-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .search-box {
+            width: calc(100% - 20px);
+            margin: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            background-color: #ffffff;
+            outline: none;
         }
 
         .table-container {
             overflow-x: auto;
             max-width: 100%;
+            margin-top: 10px;
+            display: none;
         }
 
         table {
@@ -106,6 +155,11 @@
         th {
             background-color: #f8f9fa;
             font-weight: 600;
+        }
+
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
         }
 
         .pagination {
@@ -142,16 +196,17 @@
 </head>
 <body>
     <div class="container">
-        <h1>JSON Formatter</h1>
+        <h1>JSON</h1>
         <textarea id="jsonInput" placeholder="Paste your JSON array here..."></textarea>
         <input type="file" id="fileInput" accept=".json" style="margin-bottom: 20px;">
-        
+
+        <!-- Reorganized Format Options -->
         <div class="format-options">
             <label>
-                <input type="radio" name="format" value="csv" checked onchange="updateOutput()"> Raw CSV
+                <input type="radio" name="format" value="csv" onchange="updateOutput()"> Raw CSV
             </label>
             <label>
-                <input type="radio" name="format" value="table" onchange="updateOutput()"> Tabulated
+                <input type="radio" name="format" value="table" checked onchange="updateOutput()"> Tabulated
             </label>
             <label>
                 <input type="radio" name="format" value="markdown" onchange="updateOutput()"> Markdown
@@ -161,23 +216,18 @@
             </label>
         </div>
 
-        <div style="margin-bottom: 20px;">
-            <label>
-                <input type="checkbox" id="flattenCheckbox"> Flatten JSON
-            </label>
-        </div>
-
-        <!-- Dynamic Field Selector -->
+        <!-- Enhanced Field Selector -->
         <div class="field-selector" id="fieldSelector">
             <strong>Select Fields to Display:</strong>
-            <!-- Checkboxes will be generated here -->
+            <div class="fields-container" id="fieldsContainer"></div>
         </div>
 
-        <button onclick="convertJsonToCsv()">Convert to CSV</button>
+        <button onclick="convertJsonToCsv()">Convert</button>
         <div class="output">
             <h2>Output</h2>
             <textarea id="csvOutput" readonly></textarea>
             <div class="table-container" id="tableContainer">
+                <input type="text" id="searchInput" class="search-box" placeholder="Search content..." oninput="filterTable()">
                 <div id="tableOutput"></div>
             </div>
             <div class="pagination" id="paginationControls"></div>
@@ -189,6 +239,7 @@
         let keys = [];
         let currentPage = 1;
         const itemsPerPage = 50;
+        let filteredData = [];
 
         document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 
@@ -211,7 +262,6 @@
 
         function convertJsonToCsv() {
             const input = document.getElementById('jsonInput').value;
-            const flatten = document.getElementById('flattenCheckbox').checked;
 
             if (!input.trim()) {
                 alert('JSON input cannot be empty.');
@@ -225,14 +275,15 @@
                     throw new Error("Invalid JSON array");
                 }
 
-                if (flatten) {
-                    jsonData = jsonData.map(item => flattenObject(item));
-                }
+                // Always flatten the JSON data
+                jsonData = jsonData.map(item => flattenObject(item));
 
                 keys = Object.keys(jsonData[0]);
+                filteredData = jsonData; // Initialize filtered data
                 createFieldSelectors(keys);
                 updateOutput();
             } catch (error) {
+                console.error("Error parsing JSON:", error);
                 alert('Invalid JSON format. Please ensure your input is a properly formatted JSON array.');
             }
         }
@@ -257,8 +308,8 @@
 
         // Function to create checkboxes for field selection
         function createFieldSelectors(fields) {
-            const fieldSelector = document.getElementById('fieldSelector');
-            fieldSelector.innerHTML = '<strong>Select Fields to Display:</strong>';
+            const fieldsContainer = document.getElementById('fieldsContainer');
+            fieldsContainer.innerHTML = ''; // Clear previous fields
             fields.forEach(field => {
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -272,16 +323,17 @@
                 label.textContent = field;
 
                 const container = document.createElement('div');
+                container.className = 'field-item'; // Add a class for filtering
                 container.appendChild(checkbox);
                 container.appendChild(label);
 
-                fieldSelector.appendChild(container);
+                fieldsContainer.appendChild(container);
             });
         }
 
         // Function to get selected fields from checkboxes
         function getSelectedFields() {
-            const checkboxes = document.querySelectorAll('#fieldSelector input[type="checkbox"]');
+            const checkboxes = document.querySelectorAll('#fieldsContainer input[type="checkbox"]');
             return Array.from(checkboxes)
                 .filter(checkbox => checkbox.checked)
                 .map(checkbox => checkbox.value);
@@ -291,14 +343,13 @@
             const format = document.querySelector('input[name="format"]:checked').value;
             const selectedFields = getSelectedFields();
             const csvOutput = document.getElementById('csvOutput');
-            const tableOutput = document.getElementById('tableOutput');
             const tableContainer = document.getElementById('tableContainer');
 
             // Show or hide the raw output section based on the selected format
             if (format === 'table') {
                 tableContainer.style.display = 'block';
                 csvOutput.style.display = 'none'; // Hide raw output textarea when Tabulated is selected
-                displayTable(selectedFields);
+                filterTable(); // Apply initial filter
             } else {
                 tableContainer.style.display = 'none';
                 csvOutput.style.display = 'block'; // Show raw output for other formats
@@ -314,28 +365,24 @@
                         break;
                     default:
                         csvOutput.value = '';
-                        tableOutput.innerHTML = '';
+                        document.getElementById('tableOutput').innerHTML = '';
                 }
             }
         }
 
         function displayCsv(selectedFields) {
             const csv = [selectedFields.join(',')];
-            jsonData.forEach(obj => {
+            filteredData.forEach(obj => {
                 csv.push(selectedFields.map(key => JSON.stringify(obj[key] || '')).join(','));
             });
             document.getElementById('csvOutput').value = csv.join('\n');
-        }
-
-        function displayTable(selectedFields) {
-            renderTable(jsonData, selectedFields, currentPage);
         }
 
         function displayMarkdown(selectedFields) {
             const colWidths = calculateColumnWidths(selectedFields);
             const headerRow = `| ${selectedFields.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
             const separatorRow = `| ${colWidths.map(width => '-'.repeat(width)).join(' | ')} |`;
-            const rows = jsonData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const rows = filteredData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
             const markdownTable = [headerRow, separatorRow, ...rows].join('\n');
             document.getElementById('csvOutput').value = markdownTable;
         }
@@ -344,29 +391,26 @@
             const colWidths = calculateColumnWidths(selectedFields);
             const headerRow = `+${colWidths.map(width => '-'.repeat(width + 2)).join('+')}+`;
             const columnRow = `| ${selectedFields.map((key, i) => key.padEnd(colWidths[i])).join(' | ')} |`;
-            const rows = jsonData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
+            const rows = filteredData.map(obj => `| ${selectedFields.map((key, i) => String(obj[key] || '').padEnd(colWidths[i])).join(' | ')} |`);
             const sqlTable = [headerRow, columnRow, headerRow, ...rows, headerRow].join('\n');
             document.getElementById('csvOutput').value = sqlTable;
         }
 
         function calculateColumnWidths(selectedFields) {
-            return selectedFields.map((key, index) => {
+            return selectedFields.map((key) => {
                 return Math.max(
                     key.length,
-                    ...jsonData.map(row => String(row[key] || '').length)
+                    ...filteredData.map(row => String(row[key] || '').length)
                 );
             });
         }
 
-        function renderTable(data, headers, page) {
-            const start = (page - 1) * itemsPerPage;
-            const end = start + itemsPerPage;
-            const paginatedData = data.slice(start, end);
-
+        function displayTable(data, headers) {
             const table = document.createElement('table');
             const thead = document.createElement('thead');
             const tbody = document.createElement('tbody');
 
+            // Create table headers
             const headerRow = document.createElement('tr');
             headers.forEach(header => {
                 const th = document.createElement('th');
@@ -375,22 +419,61 @@
             });
             thead.appendChild(headerRow);
 
-            paginatedData.forEach(row => {
-                const tr = document.createElement('tr');
-                headers.forEach(header => {
-                    const td = document.createElement('td');
-                    td.textContent = row[header] !== undefined ? row[header] : '';
-                    tr.appendChild(td);
+            // Create table rows
+            if (data.length > 0) {
+                data.forEach(row => {
+                    const tr = document.createElement('tr');
+                    headers.forEach(header => {
+                        const td = document.createElement('td');
+                        td.innerHTML = highlightText(row[header] !== undefined ? row[header] : '', document.getElementById('searchInput').value);
+                        tr.appendChild(td);
+                    });
+                    tbody.appendChild(tr);
                 });
-                tbody.appendChild(tr);
-            });
+            } else {
+                // Show a message when no data is available
+                const noDataRow = document.createElement('tr');
+                const noDataCell = document.createElement('td');
+                noDataCell.colSpan = headers.length;
+                noDataCell.textContent = 'No data available.';
+                noDataRow.appendChild(noDataCell);
+                tbody.appendChild(noDataRow);
+            }
 
             table.appendChild(thead);
             table.appendChild(tbody);
             document.getElementById('tableOutput').innerHTML = '';
             document.getElementById('tableOutput').appendChild(table);
+        }
 
-            updatePaginationControls(page, data.length);
+        // Function to highlight search term in the content
+        function highlightText(text, searchTerm) {
+            if (!searchTerm) return text;
+            const regex = new RegExp(`(${searchTerm})`, 'gi');
+            return text.toString().replace(regex, '<span class="highlight">$1</span>');
+        }
+
+        // Function to filter table rows based on search input and update pagination
+        function filterTable() {
+            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const selectedFields = getSelectedFields();
+
+            // Filter the data based on search input
+            filteredData = jsonData.filter(row => {
+                return selectedFields.some(field => (row[field] || '').toString().toLowerCase().includes(searchInput));
+            });
+
+            // Render table with filtered data
+            renderTable(filteredData, selectedFields, currentPage);
+            updatePaginationControls(currentPage, filteredData.length);
+        }
+
+        function renderTable(data, headers, page) {
+            const start = (page - 1) * itemsPerPage;
+            const end = start + itemsPerPage;
+            const paginatedData = data.slice(start, end);
+
+            displayTable(paginatedData, headers);
         }
 
         function updatePaginationControls(page, totalItems) {
@@ -403,7 +486,7 @@
             prevButton.disabled = page === 1;
             prevButton.onclick = () => {
                 currentPage--;
-                renderTable(jsonData, getSelectedFields(), currentPage);
+                renderTable(filteredData, getSelectedFields(), currentPage);
             };
             paginationControls.appendChild(prevButton);
 
@@ -412,7 +495,7 @@
             nextButton.disabled = page === totalPages;
             nextButton.onclick = () => {
                 currentPage++;
-                renderTable(jsonData, getSelectedFields(), currentPage);
+                renderTable(filteredData, getSelectedFields(), currentPage);
             };
             paginationControls.appendChild(nextButton);
         }
