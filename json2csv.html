@@ -2,206 +2,283 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible="IE=edge">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Parser</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #e9ecef;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
-        }
+    :root {
+        /* Color Variables */
+        --primary-bg: #f6f8fa;
+        --primary-hover-bg: #eff2f5;
+        --primary-active-bg: #e6eaef;
+        --primary-disabled-bg: #818b981a;
+        --primary-fg: #25292e;
+        --primary-border: #d1d9e0;
 
+        --secondary-bg: #0969da;
+        --secondary-hover-bg: #0860ca;
+        --secondary-active-bg: #0757ba;
+        --secondary-disabled-bg: #818b98;
+        --secondary-fg: #ffffff;
+        --secondary-border: #0969da;
+
+        --neutral-bg: #e6eaef;
+        --neutral-hover-bg: #e0e6eb;
+        --neutral-active-bg: #dae0e7;
+        --neutral-border: #d1d9e0;
+
+        --text-muted: #59636e;
+        --text-dark: #25292e;
+    }
+
+    body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: var(--neutral-bg);
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        min-height: 100vh;
+    }
+
+    .container {
+        width: 90%;
+        min-width: 600px;
+        margin: 60px auto;
+        padding: 30px;
+        background-color: #ffffff;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        border-radius: 8px;
+    }
+
+    textarea {
+        width: 99%;
+        height: 150px;
+        margin-bottom: 20px;
+        font-family: monospace;
+        padding: 12px;
+        border: 1px solid var(--primary-border);
+        border-radius: 5px;
+        background-color: var(--primary-bg);
+        resize: vertical;
+        transition: border-color 0.3s;
+    }
+
+    textarea:focus {
+        border-color: var(--secondary-border);
+        outline: none;
+    }
+
+    button {
+        padding: 10px 20px;
+        background-color: var(--secondary-bg);
+        color: var(--secondary-fg);
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s, transform 0.2s;
+    }
+
+    button:hover {
+        background-color: var(--secondary-hover-bg);
+        transform: translateY(-2px);
+    }
+
+    button:disabled {
+        background-color: var(--secondary-disabled-bg);
+        cursor: not-allowed;
+    }
+
+    .output {
+        margin-top: 25px;
+    }
+
+    .format-options {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .format-options label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        padding: 10px 15px;
+        border: 1px solid var(--neutral-border);
+        border-radius: 5px;
+        background-color: var(--primary-bg);
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .format-options input[type="radio"] {
+        margin: 0;
+    }
+
+    .format-options label:hover {
+        background-color: var(--primary-hover-bg);
+    }
+
+    .field-selector {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 20px;
+        padding: 15px;
+        border: 1px solid var(--neutral-border);
+        border-radius: 5px;
+        background-color: var(--primary-bg);
+    }
+
+    .field-selector strong {
+        margin-bottom: 10px;
+        font-weight: bold;
+    }
+
+    .fields-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        max-height: 150px;
+        overflow-y: auto;
+    }
+
+    .field-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .search-box {
+        width: calc(100% - 20px);
+        margin: 10px;
+        padding: 8px;
+        border: 1px solid var(--primary-border);
+        border-radius: 5px;
+        background-color: var(--primary-bg);
+        outline: none;
+    }
+
+    .table-container {
+        overflow-x: auto;
+        max-width: 100%;
+        margin-top: 10px;
+        display: none;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    th, td {
+        border: 1px solid var(--primary-border);
+        padding: 10px;
+        text-align: left;
+        font-size: 14px;
+    }
+
+    th {
+        background-color: var(--primary-hover-bg);
+        font-weight: 600;
+    }
+
+    .highlight {
+        background-color: yellow;
+        font-weight: bold;
+    }
+
+    .pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin: 10px 0;
+    }
+
+    .pagination-controls {
+        display: flex;
+        gap: 10px;
+    }
+
+    .pagination button {
+        padding: 8px 16px;
+        border: 1px solid var(--neutral-border);
+        border-radius: 4px;
+        background-color: var(--secondary-bg);
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+
+    .pagination button:hover {
+        background-color: var(--secondary-hover-bg);
+    }
+
+    .pagination button:disabled {
+        background-color: var(--secondary-disabled-bg);
+        cursor: not-allowed;
+    }
+
+    .items-per-page {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+
+    .sort-options {
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* Style for the sort button */
+    .sort-button {
+        background: var(--primary-bg);
+        border: 1px solid var(--primary-border);
+        color: var(--primary-fg);
+        cursor: pointer;
+        padding: 6px 10px;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        border-radius: 4px;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .sort-button:hover {
+        background-color: var(--primary-hover-bg);
+        color: var(--text-dark);
+        border-color: var(--primary-border);
+    }
+
+    /* Style for the sort field dropdown */
+    .sort-field {
+        background: var(--primary-bg);
+        border: 1px solid var(--primary-border);
+        color: var(--primary-fg);
+        padding: 6px 10px;
+        font-size: 14px;
+        border-radius: 4px;
+        outline: none;
+        transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        margin-right: 10px;
+    }
+
+    .sort-field:hover {
+        background-color: var(--primary-hover-bg);
+        border-color: var(--primary-border);
+        color: var(--text-dark);
+    }
+
+    @media (max-width: 700px) {
         .container {
-            width: 90%;
-            min-width: 600px;
-            margin: 60px auto;
-            padding: 30px;
-            background-color: #ffffff;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-            border-radius: 8px;
+            min-width: 95%;
         }
+    }
 
-        textarea {
-            width: 99%;
-            height: 150px;
-            margin-bottom: 20px;
-            font-family: monospace;
-            padding: 12px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #f8f9fa;
-            resize: vertical;
-            transition: border-color 0.3s;
-        }
-
-        textarea:focus {
-            border-color: #80bdff;
-            outline: none;
-        }
-
-        button {
-            padding: 12px 24px;
-            background-color: #007bff;
-            color: #fff;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s, transform 0.2s;
-        }
-
-        button:hover {
-            background-color: #0056b3;
-            transform: translateY(-2px);
-        }
-
-        .output {
-            margin-top: 25px;
-        }
-
-        .format-options {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-
-        .format-options label {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            padding: 10px 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f8f9fa;
-            cursor: pointer;
-            transition: background-color 0.3s;
-        }
-
-        .format-options input[type="radio"] {
-            margin: 0;
-        }
-
-        .format-options label:hover {
-            background-color: #e0e7ff;
-        }
-
-        .field-selector {
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            background-color: #f8f9fa;
-        }
-
-        .field-selector strong {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        .fields-container {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .field-item {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .search-box {
-            width: calc(100% - 20px);
-            margin: 10px;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            background-color: #ffffff;
-            outline: none;
-        }
-
-        .table-container {
-            overflow-x: auto;
-            max-width: 100%;
-            margin-top: 10px;
-            display: none;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-            font-size: 14px;
-        }
-
-        th {
-            background-color: #f8f9fa;
-            font-weight: 600;
-        }
-
-        .highlight {
-            background-color: yellow;
-        }
-
-        .pagination {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 10px 0;
-        }
-
-        .pagination-controls {
-            display: flex;
-            gap: 10px;
-        }
-
-        .pagination button {
-            padding: 8px 16px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            background-color: #007bff;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        .pagination button:hover {
-            background-color: lightskyblue;
-        }
-
-        .pagination button:disabled {
-            background-color: lightblue;
-            cursor: not-allowed;
-        }
-
-        .items-per-page {
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        @media (max-width: 700px) {
-            .container {
-                min-width: 95%;
-            }
-        }
     </style>
 </head>
 <body>
@@ -232,6 +309,15 @@
             <div class="fields-container" id="fieldsContainer"></div>
         </div>
 
+        <!-- Sorting Options -->
+        <div class="sort-options">
+            <label for="sortField">Sort by field:</label>
+            <select id="sortField" onchange="sortData()" class="sort-field">
+                <option value="">--Select Field--</option>
+            </select>
+            <button onclick="toggleSortOrder()" class="sort-button">Sort</button>
+        </div>
+
         <button onclick="convertJsonToCsv()">Convert</button>
         <div class="output">
             <h2>Output</h2>
@@ -260,6 +346,7 @@
         let currentPage = 1;
         let itemsPerPage = 30; // Default items per page
         let filteredData = [];
+        let sortOrderAsc = true; // Default sort order ascending
 
         document.getElementById('fileInput').addEventListener('change', handleFileUpload);
 
@@ -301,6 +388,7 @@
                 keys = Object.keys(jsonData[0]);
                 filteredData = jsonData; // Initialize filtered data
                 createFieldSelectors(keys);
+                populateSortFields(keys);
                 updateOutput();
             } catch (error) {
                 console.error("Error parsing JSON:", error);
@@ -349,6 +437,45 @@
 
                 fieldsContainer.appendChild(container);
             });
+        }
+
+        // Populate sort field dropdown with keys
+        function populateSortFields(fields) {
+            const sortFieldSelect = document.getElementById('sortField');
+            sortFieldSelect.innerHTML = '<option value="">--Select Field--</option>'; // Reset options
+            fields.forEach(field => {
+                const option = document.createElement('option');
+                option.value = field;
+                option.textContent = field;
+                sortFieldSelect.appendChild(option);
+            });
+        }
+
+        // Toggle sorting order
+        function toggleSortOrder() {
+            sortOrderAsc = !sortOrderAsc;
+            sortData();
+        }
+
+        // Sort data based on selected field and order
+        function sortData() {
+            const sortField = document.getElementById('sortField').value;
+            if (sortField) {
+                filteredData.sort((a, b) => {
+                    const valueA = a[sortField];
+                    const valueB = b[sortField];
+
+                    // Handle different data types gracefully
+                    if (typeof valueA === 'string' && typeof valueB === 'string') {
+                        return sortOrderAsc ? valueA.localeCompare(valueB) : valueB.localeCompare(valueA);
+                    } else if (!isNaN(valueA) && !isNaN(valueB)) {
+                        return sortOrderAsc ? valueA - valueB : valueB - valueA;
+                    } else {
+                        return 0;
+                    }
+                });
+                updateOutput(); // Re-render the output after sorting
+            }
         }
 
         // Function to get selected fields from checkboxes
@@ -488,9 +615,9 @@
                 displayTable(filteredData, selectedFields);
                 updatePaginationControls(1, filteredData.length, false); // Disable pagination when searching
             } else {
-                // Restore default pagination when not searching
-                renderTable(jsonData, selectedFields, currentPage);
-                updatePaginationControls(currentPage, jsonData.length, true);
+                // Restore default pagination when search input is cleared
+                renderTable(filteredData, selectedFields, currentPage);
+                updatePaginationControls(currentPage, filteredData.length, true); // Enable pagination when not searching
             }
         }
 
@@ -502,38 +629,37 @@
             displayTable(paginatedData, headers);
         }
 
-        function updatePaginationControls(page, totalItems, enablePagination) {
+        function updateItemsPerPage() {
+            itemsPerPage = parseInt(document.getElementById('itemsPerPage').value);
+            currentPage = 1; // Reset to first page when changing items per page
+            renderTable(filteredData, getSelectedFields(), currentPage);
+            updatePaginationControls(currentPage, filteredData.length, true);
+        }
+
+        function updatePaginationControls(page, totalItems, enable) {
             const paginationControls = document.getElementById('paginationControls');
             const totalPages = Math.ceil(totalItems / itemsPerPage);
             paginationControls.innerHTML = '';
 
-            if (!enablePagination) return; // Skip creating pagination if disabled
-
             const prevButton = document.createElement('button');
             prevButton.textContent = 'Previous';
-            prevButton.disabled = page === 1;
+            prevButton.disabled = page === 1 || !enable;
             prevButton.onclick = () => {
                 currentPage--;
                 renderTable(filteredData, getSelectedFields(), currentPage);
+                updatePaginationControls(currentPage, filteredData.length, true);
             };
             paginationControls.appendChild(prevButton);
 
             const nextButton = document.createElement('button');
             nextButton.textContent = 'Next';
-            nextButton.disabled = page === totalPages;
+            nextButton.disabled = page === totalPages || !enable;
             nextButton.onclick = () => {
                 currentPage++;
                 renderTable(filteredData, getSelectedFields(), currentPage);
+                updatePaginationControls(currentPage, filteredData.length, true);
             };
             paginationControls.appendChild(nextButton);
-        }
-
-        // Update items per page when the dropdown value changes
-        function updateItemsPerPage() {
-            itemsPerPage = parseInt(document.getElementById('itemsPerPage').value, 10);
-            currentPage = 1; // Reset to the first page
-            renderTable(filteredData, getSelectedFields(), currentPage);
-            updatePaginationControls(currentPage, filteredData.length, true);
         }
     </script>
 </body>
