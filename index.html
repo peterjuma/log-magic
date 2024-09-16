@@ -602,24 +602,25 @@
 
         // Function to filter table rows based on search input
         function filterTable() {
-            const searchInput = document.getElementById('searchInput').value.toLowerCase();
+            const searchInput = document.getElementById('searchInput').value.toLowerCase().trim();
             const selectedFields = getSelectedFields();
 
-            // Filter the data based on search input
-            if (searchInput) {
+            // Check if the search input is empty
+            if (searchInput === "") {
+                // If empty, reset filteredData to original jsonData
+                filteredData = jsonData;
+            } else {
+                // Filter the data based on the search input
                 filteredData = jsonData.filter(row => {
                     return selectedFields.some(field => (row[field] || '').toString().toLowerCase().includes(searchInput));
                 });
-
-                // Display all results on one page if searching
-                displayTable(filteredData, selectedFields);
-                updatePaginationControls(1, filteredData.length, false); // Disable pagination when searching
-            } else {
-                // Restore default pagination when search input is cleared
-                renderTable(filteredData, selectedFields, currentPage);
-                updatePaginationControls(currentPage, filteredData.length, true); // Enable pagination when not searching
             }
+
+            // Render table with filtered or full data
+            renderTable(filteredData, selectedFields, currentPage);
+            updatePaginationControls(currentPage, filteredData.length);
         }
+
 
         function renderTable(data, headers, page) {
             const start = (page - 1) * itemsPerPage;
