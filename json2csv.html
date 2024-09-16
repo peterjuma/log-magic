@@ -164,12 +164,17 @@
 
         .pagination {
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
+            align-items: center;
             margin: 10px 0;
         }
 
+        .pagination-controls {
+            display: flex;
+            gap: 10px;
+        }
+
         .pagination button {
-            margin: 0 5px;
             padding: 8px 16px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -185,6 +190,12 @@
         .pagination button:disabled {
             background-color: lightblue;
             cursor: not-allowed;
+        }
+
+        .items-per-page {
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
 
         @media (max-width: 700px) {
@@ -230,7 +241,17 @@
                 <input type="text" id="searchInput" class="search-box" placeholder="Search content..." oninput="filterTable()">
                 <div id="tableOutput"></div>
             </div>
-            <div class="pagination" id="paginationControls"></div>
+            <div class="pagination">
+                <div class="items-per-page">
+                    <label for="itemsPerPage">Items per page:</label>
+                    <select id="itemsPerPage" onchange="updateItemsPerPage()">
+                        <option value="30">30</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+                <div class="pagination-controls" id="paginationControls"></div>
+            </div>
         </div>
     </div>
 
@@ -238,7 +259,7 @@
         let jsonData = [];
         let keys = [];
         let currentPage = 1;
-        const itemsPerPage = 50;
+        let itemsPerPage = 30; // Default items per page
         let filteredData = [];
 
         document.getElementById('fileInput').addEventListener('change', handleFileUpload);
@@ -498,6 +519,14 @@
                 renderTable(filteredData, getSelectedFields(), currentPage);
             };
             paginationControls.appendChild(nextButton);
+        }
+
+        // Update items per page when the dropdown value changes
+        function updateItemsPerPage() {
+            itemsPerPage = parseInt(document.getElementById('itemsPerPage').value, 10);
+            currentPage = 1; // Reset to the first page
+            renderTable(filteredData, getSelectedFields(), currentPage);
+            updatePaginationControls(currentPage, filteredData.length);
         }
     </script>
 </body>
