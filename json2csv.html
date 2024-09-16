@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="X-UA-Compatible="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JSON Parser</title>
     <style>
@@ -159,7 +159,6 @@
 
         .highlight {
             background-color: yellow;
-            font-weight: bold;
         }
 
         .pagination {
@@ -474,19 +473,25 @@
             return text.toString().replace(regex, '<span class="highlight">$1</span>');
         }
 
-        // Function to filter table rows based on search input and update pagination
+        // Function to filter table rows based on search input
         function filterTable() {
             const searchInput = document.getElementById('searchInput').value.toLowerCase();
             const selectedFields = getSelectedFields();
 
             // Filter the data based on search input
-            filteredData = jsonData.filter(row => {
-                return selectedFields.some(field => (row[field] || '').toString().toLowerCase().includes(searchInput));
-            });
+            if (searchInput) {
+                filteredData = jsonData.filter(row => {
+                    return selectedFields.some(field => (row[field] || '').toString().toLowerCase().includes(searchInput));
+                });
 
-            // Render table with filtered data
-            renderTable(filteredData, selectedFields, currentPage);
-            updatePaginationControls(currentPage, filteredData.length);
+                // Display all results on one page if searching
+                displayTable(filteredData, selectedFields);
+                updatePaginationControls(1, filteredData.length, false); // Disable pagination when searching
+            } else {
+                // Restore default pagination when not searching
+                renderTable(jsonData, selectedFields, currentPage);
+                updatePaginationControls(currentPage, jsonData.length, true);
+            }
         }
 
         function renderTable(data, headers, page) {
@@ -497,10 +502,12 @@
             displayTable(paginatedData, headers);
         }
 
-        function updatePaginationControls(page, totalItems) {
+        function updatePaginationControls(page, totalItems, enablePagination) {
             const paginationControls = document.getElementById('paginationControls');
             const totalPages = Math.ceil(totalItems / itemsPerPage);
             paginationControls.innerHTML = '';
+
+            if (!enablePagination) return; // Skip creating pagination if disabled
 
             const prevButton = document.createElement('button');
             prevButton.textContent = 'Previous';
@@ -526,7 +533,7 @@
             itemsPerPage = parseInt(document.getElementById('itemsPerPage').value, 10);
             currentPage = 1; // Reset to the first page
             renderTable(filteredData, getSelectedFields(), currentPage);
-            updatePaginationControls(currentPage, filteredData.length);
+            updatePaginationControls(currentPage, filteredData.length, true);
         }
     </script>
 </body>
