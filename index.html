@@ -308,9 +308,12 @@
         <!-- Enhanced Field Selector -->
         <div class="field-selector" id="fieldSelector">
             <strong>Select Fields to Display:</strong>
+            <div class="field-item">
+                <input type="checkbox" id="selectAllFields" onchange="toggleSelectAllFields(this)" checked>
+                <label for="selectAllFields" >All</label> 
+            </div>
             <div class="fields-container" id="fieldsContainer"></div>
         </div>
-
         <!-- Sorting Options -->
         <div class="sort-options">
             <label for="sortField">Sort by field:</label>
@@ -434,6 +437,7 @@
         function createFieldSelectors(fields) {
             const fieldsContainer = document.getElementById('fieldsContainer');
             fieldsContainer.innerHTML = ''; // Clear previous fields
+
             fields.forEach(field => {
                 const checkbox = document.createElement('input');
                 checkbox.type = 'checkbox';
@@ -454,6 +458,16 @@
                 fieldsContainer.appendChild(container);
             });
         }
+
+        // Function to toggle select/deselect all checkboxes
+        function toggleSelectAllFields(masterCheckbox) {
+            const checkboxes = document.querySelectorAll('#fieldsContainer input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = masterCheckbox.checked;
+            });
+            updateOutput(); // Update the output whenever the master checkbox is toggled
+        }
+
 
         // Populate sort field dropdown with keys
         function populateSortFields(fields) {
