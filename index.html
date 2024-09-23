@@ -295,13 +295,13 @@
                 <input type="radio" name="format" value="csv" onchange="updateOutput()"> Raw CSV
             </label>
             <label>
-                <input type="radio" name="format" value="table" checked onchange="updateOutput()"> Tabulated
+                <input type="radio" name="format" value="table" checked onchange="updateOutput()"> HTML Table
             </label>
             <label>
                 <input type="radio" name="format" value="markdown" onchange="updateOutput()"> Markdown
             </label>
             <label>
-                <input type="radio" name="format" value="sql" onchange="updateOutput()"> SQL
+                <input type="radio" name="format" value="sql" onchange="updateOutput()"> SQL-Like
             </label>
         </div>
 
@@ -387,7 +387,9 @@
                 // Always flatten the JSON data
                 jsonData = jsonData.map(item => flattenObject(item));
 
-                keys = Object.keys(jsonData[0]);
+                // Find the item with the most keys to use for headers
+                keys = getAllKeysFromJson(jsonData);
+
                 filteredData = jsonData; // Initialize filtered data
                 createFieldSelectors(keys);
                 populateSortFields(keys);
@@ -414,6 +416,18 @@
                 }
             }
             return result;
+        }
+
+        // Function to get all unique keys from the item with the most keys
+        function getAllKeysFromJson(data) {
+            let maxKeys = [];
+            data.forEach(item => {
+                const keys = Object.keys(item);
+                if (keys.length > maxKeys.length) {
+                    maxKeys = keys;
+                }
+            });
+            return maxKeys;
         }
 
         // Function to create checkboxes for field selection
